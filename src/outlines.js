@@ -95,6 +95,45 @@ const polygon = (config, name, points, outlines, units) => {
     a.unexpected(config, `${name}`, ['points'])
     const poly_points = a.sane(config.points, `${name}.points`, 'array')()
 
+    const beziers = []
+
+    poly_points.forEach((poly_point, index) => {
+        const b = poly_point.bezier
+        if (b) {
+            a.sane(b, `${name}.points[${index}].bezier`, 'object')()
+            a.assert(
+                b.type === "cubic" || b.type === "quadratic", 
+                `Unknown bezier curve type "${b}" in point "${name}.points[${index}]"`
+            )
+
+            const acc = a.sane(
+                b.accuracy || units.$default_bezier_accuracy,
+                `${name}.points[${index}].bezier.accuracy`, 'number'
+            )();
+
+            // Save bezier info for later use
+            beziers.push({
+                start: index,
+                end: index + (b.type === "cubic" ? 3 : 2),
+                accuracy: acc
+            })
+        }
+    });
+
+    // Sort by start and assert no overlaps in bezier curves
+    beziers
+        .sort((a, b) => a.start - b.start)
+        .forEach((current, index, arr) => {
+            if (index > 0) {
+                const previous = arr[index - 1];
+
+                a.assert(
+                    current.start >= previous.end, 
+                    `Curve ${index} in outline ${name} overlaps with curve ${index - 1}.`
+                );
+            }
+        });
+
     // return shape function and its units
     return [point => {
         const parsed_points = []
@@ -107,7 +146,8 @@ const polygon = (config, name, points, outlines, units) => {
             last_anchor = anchor(poly_point, poly_name, points, last_anchor)(units)
             parsed_points.push(last_anchor.p)
         }
-        let poly = u.poly(parsed_points)
+
+        let poly = u.poly(parsed_points, beziers)
         const bbox = u.bbox(parsed_points)
         return [poly, bbox]
     }, units]

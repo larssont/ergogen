@@ -86,7 +86,7 @@ const anchor = exports.parse = (raw, name, points={}, start=new Point(), mirror=
         return current
     }
 
-    a.unexpected(raw, name, ['ref', 'aggregate', 'orient', 'shift', 'rotate', 'affect', 'resist'])
+    a.unexpected(raw, name, ['ref', 'aggregate', 'orient', 'shift', 'rotate', 'affect', 'resist', 'bezier'])
 
     //
     // Reference or aggregate handling

@@ -12,7 +12,8 @@ const default_units = {
     $default_height: 'u-1',
     $default_width: 'u-1',
     $default_padding: 'u',
-    $default_autobind: 10
+    $default_autobind: 10,
+    $default_bezier_accuracy: 1.5
 }
 
 exports.parse = (config = {}) => {
