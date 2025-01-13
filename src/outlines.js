@@ -148,7 +148,7 @@ const polygon = (config, name, points, outlines, units) => {
         }
 
         let poly = u.poly(parsed_points, beziers)
-        const bbox = u.bbox(parsed_points)
+        const bbox = m.measure.modelExtents(poly)
         return [poly, bbox]
     }, units]
 }
