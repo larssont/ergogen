@@ -17,19 +17,31 @@ const aggregator_common = ['parts', 'method']
 
 const aggregators = {
     average: (config, name, parts) => {
-        a.unexpected(config, name, aggregator_common)
-        const len = parts.length
-        if (len == 0) {
-          return new Point()
-        }
-        let x = 0, y = 0, r = 0
-        for (const part of parts) {
-            x += part.x
-            y += part.y
-            r += part.r
-        }
-        return new Point(x / len, y / len, r / len)
+        if (!parts.length) return new Point();
+    
+        const sum = parts.reduce((sums, {x, y, r}) => {
+            sums.x += x;
+            sums.y += y;
+            sums.r += r;
+            return sums;
+        }, {x: 0, y: 0, r: 0});
+    
+        return new Point(sum.x / parts.length, sum.y / parts.length, sum.r / parts.length);
+    },    
+    min: (config, name, parts) => {
+        return parts.reduce((acc, p) => new Point(
+            Math.min(acc.x, p.x),
+            Math.min(acc.y, p.y),
+            Math.min(acc.r, p.r)
+        ), new Point(Infinity, Infinity, Infinity));
     },
+    max: (config, name, parts) => {
+        return parts.reduce((acc, p) => new Point(
+            Math.max(acc.x, p.x),
+            Math.max(acc.y, p.y),
+            Math.max(acc.r, p.r)
+        ), new Point(-Infinity, -Infinity, -Infinity));
+    },    
     intersect: (config, name, parts) => {
         // a line is generated from a point by taking their
         // (rotated) Y axis. The line is not extended to
@@ -48,7 +60,6 @@ const aggregators = {
             return line
         }
 
-        a.unexpected(config, name, aggregator_common)
         a.assert(parts.length==2, `Intersect expects exactly two parts, but it got ${parts.length}!`)
 
         const line1 = get_line_from_point(parts[0])
@@ -113,6 +124,8 @@ const anchor = exports.parse = (raw, name, points={}, start=new Point(), mirror=
         raw.aggregate = a.sane(raw.aggregate, `${name}.aggregate`, 'object')()
         raw.aggregate.method = a.sane(raw.aggregate.method || 'average', `${name}.aggregate.method`, 'string')()
         a.assert(aggregators[raw.aggregate.method], `Unknown aggregator method "${raw.aggregate.method}" in anchor "${name}"!`)
+
+        a.unexpected(raw.aggregate, `${name}.aggregate`, aggregator_common)
         raw.aggregate.parts = a.sane(raw.aggregate.parts || [], `${name}.aggregate.parts`, 'array')()
 
         const parts = []
